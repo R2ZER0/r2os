@@ -1,0 +1,80 @@
+jmp _start;
+
+#define DEFAULT_PORT_VAL 0
+
+#define KERNEL_STACK_SIZE 2048
+#define TASK_STACK_SIZE 1000
+
+#include <programs/mem.txt>
+
+//Include drivers for console screen and device host
+#include <drivers\drv_udh.txt>
+#include <drivers\drv_cscr.txt>
+#include <programs/r2os/console.txt>
+#include <programs/r2os/multitask.txt>
+
+float _kernel_interrupt_no = 0;
+
+void print_state_stack(float* stack_top) {
+    float* s = stack_top;
+    print("State Stack @"); printn(s);
+    print("\nSS     "); printn(*(s-6));
+    print("\nESP    "); printn(*(s-10));
+    print("\nEBP    "); printn(*(s-11));
+    print("\nIP     "); printn(*(s-18));
+    print("\nCS     "); printn(*(s-19));
+    print("\n");
+}
+
+void print_task_state(float task_idx) {
+    print("Task: "); printn(task_idx); print("\n");
+    print("  SS: "); printn(_kernel_task_ss[task_idx]); print("\n");
+    print(" ESP: "); printn(_kernel_task_ss[task_idx]); print("\n");
+}
+
+void kernel_init() {
+    mem_heap_init(10000, 16*1024);
+    init_console();
+    
+    cscrPrintLine("Hi\n", 930);
+    
+    float* stack_bottom = mem_heap_alloc(TASK_STACK_SIZE);
+    //print("Stack @"); printn(stack_bottom); print("\n");
+    float task_idx = _next_free_task();
+    if(task_idx >= 0) {
+        task_init(task_idx, stack_bottom, 0, _task1_entrypoint);        
+        print_task_state(task_idx);
+        print_state_stack(stack_bottom + TASK_STACK_SIZE - 1);
+    } else {
+        print("Err Init Task\n");
+    }
+    
+
+    //float* task1_stack = task_get_stack_top(task_top);
+   
+    //print_state_stack(task_get_stack_top(task1));
+    print("Starting Task...\n");
+    //jmp _endloop;
+}
+
+void kernel_service() {
+    out 5, _kernel_interrupt_no;
+    
+    task_goto_next();
+    print_task_state(_kernel_task_cur);
+}
+
+
+_task1_entrypoint:
+    loopPrintCounter();
+    jmp _task1_entrypoint;
+
+float taskCounter = 0;
+
+void loopPrintCounter() {
+    printn(taskCounter++); print("\n");
+}
+
+
+// Hypervisor Entrypoint
+#include <programs/hyp1.txt>

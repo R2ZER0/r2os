@@ -1,0 +1,14 @@
+float* _mem_heap_start_ptr = 0;
+float _mem_heap_size = 0;
+float _mem_heap_idx = 0;
+
+void mem_heap_init(float* heap_ptr, float heap_size) {
+    _mem_heap_start_ptr = heap_ptr;
+    _mem_heap_size = heap_size;
+}
+
+float* mem_heap_alloc(float size) {
+    float* p = (_mem_heap_start_ptr + _mem_heap_idx);
+    _mem_heap_idx += size;
+    return p;   
+}

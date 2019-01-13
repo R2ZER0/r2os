@@ -1,0 +1,50 @@
+void init_console() {
+    udhSetBusAddress(65536);
+    cscrInitialize(0);
+    udhQueryDevices();
+
+    cscrSelect(0);
+    cscrSetActive(1);
+    cscrClear();
+    
+    cscrSetCursor(0,0);
+    cscrPrintLine("Hello R2OS ",930);
+    cscrPrintNumber(123,930); 
+    cscrPrintLine("\n");
+}
+
+void print(float* s) {
+    cscrPrintLine(s, 93);
+}
+
+void printn(float n) {
+    cscrPrintNumber(n, 93);
+}
+
+/*
+void print_state_stack_full(float* stack_top) {
+    float* s = stack_top;
+    print("State Stack @"); printn(s);
+    print("\nLS     "); printn(*s); // LS
+    print("\nKS     "); printn(*(s-1));
+    print("\nES     "); printn(*(s-2));
+    print("\nGS     "); printn(*(s-3));
+    print("\nFS     "); printn(*(s-4));
+    print("\nDS     "); printn(*(s-5)); 
+    print("\nSS     "); printn(*(s-6));
+    print("\nCS     "); printn(*(s-7));
+    print("\nEDI    "); printn(*(s-8));
+    print("\nESI    "); printn(*(s-9));
+    print("\nESP    "); printn(*(s-10));
+    print("\nEBP    "); printn(*(s-11));
+    print("\nEDX    "); printn(*(s-12));
+    print("\nECX    "); printn(*(s-13));
+    print("\nEBX    "); printn(*(s-14));
+    print("\nEAX    "); printn(*(s-15));
+    print("\nCMPR   "); printn(*(s-16));
+    print("\nIP     "); printn(*(s-17));
+    print("\nIP     "); printn(*(s-18));
+    print("\nCS     "); printn(*(s-19));
+    print("\n");
+}
+*/

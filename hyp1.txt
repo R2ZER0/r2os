@@ -1,0 +1,254 @@
+// Ahoy
+jmp _start;
+
+_start:
+    out 0, DEFAULT_PORT_VAL;
+    out 1, DEFAULT_PORT_VAL;
+    out 2, DEFAULT_PORT_VAL
+    out 3, DEFAULT_PORT_VAL;
+    out 4, DEFAULT_PORT_VAL;
+    out 5, DEFAULT_PORT_VAL;
+    out 6, DEFAULT_PORT_VAL;
+    out 7, DEFAULT_PORT_VAL;
+    
+    lidtr _interrupt_table;
+    stef;
+    
+    
+    mov eax, 1;
+    mov ebx, 2;
+    mov ecx, 3;
+    mov edx, 4;
+    mov fs, 5;
+    
+    // Setup Kernel Stack
+    mov ss, kernel_stack;
+    add ss, KERNEL_STACK_SIZE;
+    cpuset 9, KERNEL_STACK_SIZE;
+    mov esp, KERNEL_STACK_SIZE;
+    
+    kernel_init();
+    
+    jmp restore_current_task;
+    
+    /*
+    // Setup Task 1
+    mov ss, TASK1_STACK;
+    mov esp, TASK_STACK_SIZE;
+    cpuset 9, TASK_STACK_SIZE;
+    push ls;
+    push ks;
+    push es;
+    push gs;
+    push fs;
+    push ds;
+    push ss;
+    push 0; // cs
+    push edi;
+    push esi;
+    //mov eax, TASK1_STACK;
+    //sub eax, 20;
+    //push eax; // esp
+    push TASK_STACK_SIZE; // esp
+    push eax; // ebp
+    push 0; // edx
+    push 0; // ecx
+    push 20000; // ebx
+    push 10000; // eax
+    push 0; // cmpr
+    push _loopB; // entrypoint ip
+    push _loopB; // entrypoint ip (non-external interrupt)
+    push 0; // cs
+    mov [task_esp], esp;
+    out 6, esp;
+    
+    // Setup Task 2
+    mov ss, TASK2_STACK;
+    mov esp, TASK_STACK_SIZE;
+    cpuset 9, TASK_STACK_SIZE;
+    push ls;
+    push ks;
+    push es;
+    push gs;
+    push fs;
+    push ds;
+    push ss;
+    push 0; // cs
+    push edi;
+    push esi;
+    //mov eax, TASK2_STACK;
+    //sub eax, 20;
+    //push eax; // esp
+    push TASK_STACK_SIZE; // esp
+    push eax; // ebp
+    push 40000; // edx
+    push 30000; // ecx
+    push 20000; // ebx
+    push 10000; // eax
+    push 0; // cmpr
+    push _loopC; // entrypoint ip
+    push _loopC; // entrypoint ip (non-external interrupt)
+    push 0; // cs
+    mov eax, task_esp;
+    inc task_esp;
+    mov [eax], esp;
+    out 7, esp;
+    
+    
+    // Test task 1
+    extret;
+    //extint 32;
+    */
+    
+    jmp _endloop;
+    
+// 1. Task setup:
+// * allocate a new stack
+// * fill the top 20 slots with some default register settings, and the correct esp/esz
+// 2. Task restore
+// * set stack settings: esp/esz
+// * extret
+// 3. Task yield
+// * extint
+// * set new stack settings: esp/esz
+//
+// Later: do segment registers: cs, ds, ss
+
+/*
+void init_task_stack(float* task_stack, float* stack_pointer, float stack_size) {
+    for(float i = 0; i < 21; ++i) {
+        task_stack[-i] = 0;
+    }
+    task_stack[-10] = stack_pointer;
+    mov esz, stack_size;
+}
+*/
+
+interrupt_handler:
+//    push eax;
+    cpuget eax, 28;
+    out 1, eax;
+//    pop eax;
+    //iret;
+    jump _endloop;
+
+context_switch_handler:
+    // save current task stack
+    eax = &_kernel_task_esp + _kernel_task_cur;
+    mov [eax], esp;
+    /*mov eax, task_esp;
+    add eax, R_CURRENT_TASK;
+    mov [eax], esp;*/
+
+
+    // switch to kernel stack
+    eax = &_kernel_interrupt_no;
+    cpuget ebx, 28; // the interrupt number
+    mov [eax], ebx;
+enter_kernel:
+    mov ss, kernel_stack;
+    cpuset 9, KERNEL_STACK_SIZE;
+    mov esp, KERNEL_STACK_SIZE;
+    dec esp;
+    
+    kernel_service();
+ 
+restore_current_task:
+    // go to next task - TODO do this in kernel_service() instead
+    /*_kernel_task_cur++;
+    if(_kernel_task_cur >= NUM_TASKS) {
+        _kernel_task_cur = 0;
+    }*/
+    
+    // restore to next task
+    // setup esp
+    eax = &_kernel_task_esp + _kernel_task_cur;
+    mov eax, [eax];
+    mov esp, eax;
+    // setup ss
+    //eax = &_kernel_task_ss + _kernel_task_cur;
+    mov eax, &_kernel_task_ss;
+    mov ebx, &_kernel_task_cur;
+    mov ebx, [ebx];
+    add eax, ebx;
+    mov eax, [eax];
+    mov ss, eax;
+    // setup esz
+    cpuset 9, TASK_STACK_SIZE;
+    
+#ifdef DEBUG
+    print("\nSS     ");
+    mov eax, ss;
+    printn(eax);
+    print("\n");
+    
+    mov eax, esp;
+    add eax, 20;
+    add eax, ss;
+    print_state_stack(eax);//eax = &_kernel_task_ss + _kernel_task_cur;
+#endif    
+    extret;
+    jmp _endloop;
+    
+external_interrupt_handler:
+    //cpuget eax, 28; // gets the interrupt number
+    
+    mov r0, 0;
+    @loop:
+    cmp r0, 8;
+    jge @loopend;
+    
+    mov r1, r0;
+    add r1, esp;
+    inc r1; // offset because esp is "next slot"
+    add r1, 8;
+    out r0, #r1;
+    
+    inc r0;
+    jmp @loop;
+    
+    @loopend:    
+    extret;
+
+_endloop:
+    idle;
+    jmp _endloop;o
+
+
+_interrupt_table:
+    db interrupt_handler, 0, 0, 0; // 0
+    db interrupt_handler, 0, 0, 0; // 1
+    db interrupt_handler, 0, 0, 0; // 2
+    db interrupt_handler, 0, 0, 32; // 3
+    db interrupt_handler, 0, 0, 32; // 4
+    db interrupt_handler, 0, 0, 32; // 5
+    db interrupt_handler, 0, 0, 0;
+    db interrupt_handler, 0, 0, 0;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32; // 10
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 0;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32; // 15
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32; // 20
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32; // 25
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32;
+    db interrupt_handler, 0, 0, 32; // 30
+    db interrupt_handler, 0, 0, 32; // 31
+    db external_interrupt_handler, 0, 0, 96; // 32
+    db context_switch_handler, 0, 0, 96; // 33
+    
+alloc kernel_stack, KERNEL_STACK_SIZE, 0;
