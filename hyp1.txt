@@ -127,7 +127,7 @@ void init_task_stack(float* task_stack, float* stack_pointer, float stack_size) 
 interrupt_handler:
 //    push eax;
     cpuget eax, 28;
-    out 1, eax;
+    //out 1, eax;
 //    pop eax;
     //iret;
     jump _endloop;
@@ -161,6 +161,10 @@ restore_current_task:
     }*/
     
     // restore to next task
+    mov eax, _kernel_task_cur;
+    cmp eax, 0;
+    jl _halt;
+    
     // setup esp
     eax = &_kernel_task_esp + _kernel_task_cur;
     mov eax, [eax];
@@ -212,8 +216,11 @@ external_interrupt_handler:
 
 _endloop:
     idle;
-    jmp _endloop;o
+    jmp _endloop;
 
+_halt:
+    int 1;
+    jmp _endloop;
 
 _interrupt_table:
     db interrupt_handler, 0, 0, 0; // 0

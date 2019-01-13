@@ -1,6 +1,7 @@
 #define MAX_NUM_TASKS 16
 
-float _kernel_task_cur = 0;
+float _kernel_task_cur = -1;
+float _kernel_task_prev = -1;
 float _kernel_task_active[MAX_NUM_TASKS];
 float _kernel_task_ss[MAX_NUM_TASKS];
 float _kernel_task_esp[MAX_NUM_TASKS];
@@ -35,21 +36,25 @@ void task_init(float idx, float* stack_bottom, float* segment, float* entrypoint
 
 float task_next() {
     float i = _kernel_task_cur;
-    while(!_kernel_task_active[i]) {
+    
+    while(1) {
         ++i;
         if(i >= MAX_NUM_TASKS) {
-            _kernel_task_cur = 0;
+            i = 0;
+        }
+        if(_kernel_task_active[i]) {
+            return i;    
         }
         if(i == _kernel_task_cur) {
             return -1; // there are no active tasks   
         }
     }
-    return i;
 }
 
 float task_goto_next() {
     float i = task_next();
     if(i >= 0) {
+        _kernel_task_prev = _kernel_task_cur;
         _kernel_task_cur = i;
     }
     return i;

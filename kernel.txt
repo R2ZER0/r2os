@@ -29,7 +29,7 @@ void print_state_stack(float* stack_top) {
 void print_task_state(float task_idx) {
     print("Task: "); printn(task_idx); print("\n");
     print("  SS: "); printn(_kernel_task_ss[task_idx]); print("\n");
-    print(" ESP: "); printn(_kernel_task_ss[task_idx]); print("\n");
+    print(" ESP: "); printn(_kernel_task_esp[task_idx]); print("\n");
 }
 
 void kernel_init() {
@@ -44,26 +44,43 @@ void kernel_init() {
     if(task_idx >= 0) {
         task_init(task_idx, stack_bottom, 0, _task1_entrypoint);        
         print_task_state(task_idx);
-        print_state_stack(stack_bottom + TASK_STACK_SIZE - 1);
+        //print_state_stack(stack_bottom + TASK_STACK_SIZE - 1);
     } else {
         print("Err Init Task\n");
     }
     
+    float task2_idx = task_create(0, _task2_entrypoint);
+    if(task2_idx >= 0) {
+        print_task_state(task2_idx);
+    } else {
+        print("Err Task 2");
+    }
+    
+    out 0, _kernel_task_ss[0];
+    out 1, _kernel_task_esp[0];
+    out 2, _kernel_task_ss[1];
+    out 3, _kernel_task_esp[1];
 
     //float* task1_stack = task_get_stack_top(task_top);
    
     //print_state_stack(task_get_stack_top(task1));
-    print("Starting Task...\n");
+    task_goto_next();
+    print("Starting Task "); printn(_kernel_task_cur); print("\n\n");
     //jmp _endloop;
 }
 
 void kernel_service() {
     out 5, _kernel_interrupt_no;
-    
+    print("Prev Task: "); printn(_kernel_task_cur);
     task_goto_next();
-    print_task_state(_kernel_task_cur);
+    print("\nNext Task: "); printn(_kernel_task_cur);
+    print("\n");
+    //print_task_state(_kernel_task_cur);
 }
 
+////////////////////////////////////
+// Task 1 //////////////////////////
+////////////////////////////////////
 
 _task1_entrypoint:
     loopPrintCounter();
@@ -73,7 +90,25 @@ float taskCounter = 0;
 
 void loopPrintCounter() {
     printn(taskCounter++); print("\n");
+    extint 33;
 }
+
+
+////////////////////////////////////
+// Task 2 //////////////////////////
+////////////////////////////////////
+
+_task2_entrypoint:
+    loopPrintCounter2();
+    jmp _task2_entrypoint;
+
+float task2Counter = 0;
+
+void loopPrintCounter2() {
+    cscrPrintNumber(task2Counter++, 930); print("\n");
+    extint 33;
+}
+
 
 
 // Hypervisor Entrypoint
