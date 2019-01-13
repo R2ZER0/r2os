@@ -1,0 +1,11 @@
+jmp _start;
+
+_yieldloop:
+    yield();
+    jmp _yieldloop;
+
+#include <programs/r2os/lib/syscall.txt>
+
+_start:
+    main();
+    jmp _yieldloop;

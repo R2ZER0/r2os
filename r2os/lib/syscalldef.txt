@@ -1,0 +1,14 @@
+// print(str)
+#define SYSCALL_PRINT 1
+
+// printnum(num)
+#define SYSCALL_PRINTNUM 2
+
+// fork()
+#define SYSCALL_FORK 3
+
+// yield()
+#define SYSCALL_YIELD 4
+
+// memalloc(amount)
+#define SYSCALL_MEMALLOC 5

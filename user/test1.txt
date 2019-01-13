@@ -1,0 +1,27 @@
+#include <programs/r2os/lib/user.txt>
+
+void printvar(float* varname, float val) {
+    print(varname);
+    print(": ");
+    printnum(val);
+    print("\n");
+}
+
+void main() {
+    print("Hello, World!\n");
+    float counter = 0;
+    
+    float child_id = fork();
+    if(child_id > 0) {
+        printvar("I'm the parent! of", child_id);
+        counter = 100;
+    } else if(child_id == -1) {
+        print("I'm the child!\n");
+        counter = 200;
+    } else {
+        printvar("Fork error", child_id);
+    }
+    
+    printvar("Count", counter);
+    
+}

@@ -42,6 +42,15 @@ void print_task_state(float task_idx) {
     print("   ESP: "); printn(task_esp); print("\n");
 }
 
+void memcpy(float* dest, float* source, float count) {
+    while(count > 0) {
+        *dest = *source;
+        ++dest;
+        ++source;
+        --count;
+    }   
+}
+
 void kernel_init() {
     mem_heap_init(10000, 16*1024);
     udhSetBusAddress(EXTBUS_ADDRESS);
@@ -90,8 +99,28 @@ void kernel_service() {
         memp -= task_ptr_offset;
         kp[0] = memp;
         
-    } else if(sysfn == SYSCALL_SPAWN) {
-        // TODO
+    } else if(sysfn == SYSCALL_FORK) {
+        float parent_task = _kernel_task_cur;
+        float new_task = task_create(_kernel_task_segment[parent_task], 0);
+        if(new_task < 0) {
+            kp[0] = -2; // failed
+        } else {
+            kp[0] = -1; // set the return value for the child
+            // Copy the stack of the current process to the child
+            memcpy(_kernel_task_ss[new_task], _kernel_task_ss[parent_task], TASK_STACK_SIZE);
+            _kernel_task_esp[new_task] = _kernel_task_esp[parent_task];
+            
+            // Set the return value for the parent (the child's task id)
+            kp[0] = new_task;
+            
+            // Update the child's SS restore value in the stack
+            float* child_stack_base = _kernel_task_ss[new_task] + _kernel_task_esp[new_task] + 20;
+            *(child_stack_base - 6) = _kernel_task_ss[new_task];
+            
+            //print_state_stack(child_stack_base);
+            
+            // Note that we don't make a copy of the data segment, so all global variables/memory is shared!
+        }
         
     } else {
         // halt
@@ -101,6 +130,8 @@ void kernel_service() {
         print("!HALT!");
         int 1;
     }
+    
+    out 6, kp[0];
 }
 
 

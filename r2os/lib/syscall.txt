@@ -1,0 +1,44 @@
+#include <programs/r2os/lib/syscalldef.txt>
+
+void print(float* str) {
+    push str;
+    push SYSCALL_PRINT;
+    extint 33;
+    pop eax;
+    pop eax;
+}
+
+void printnum(float num) {
+    if(num < 0) {
+        print("-");
+        num = -num;   
+    }
+    
+    push num;
+    push SYSCALL_PRINTNUM;
+    extint 33;
+    pop eax;
+    pop eax;
+}
+
+float fork() {
+    push SYSCALL_FORK;
+    extint 33;
+    pop eax;
+    return eax;
+}
+
+float* memalloc(float amount) {
+    push amount;
+    push SYSCALL_MEMALLOC;
+    extint 33;
+    pop eax;
+    pop ebx;
+    return eax;
+}
+
+void yield() {
+    push SYSCALL_YIELD;
+    extint 33;
+    pop eax;
+}
