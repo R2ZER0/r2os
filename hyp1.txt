@@ -141,7 +141,6 @@ context_switch_handler:
     add eax, R_CURRENT_TASK;
     mov [eax], esp;*/
 
-
     // switch to kernel stack
     eax = &_kernel_interrupt_no;
     cpuget ebx, 28; // the interrupt number

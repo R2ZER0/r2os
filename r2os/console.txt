@@ -7,8 +7,8 @@ void init_console() {
     cscrClear();
     
     cscrSetCursor(0,0);
-    cscrPrintLine("Hello R2OS ",930);
-    cscrPrintNumber(123,930); 
+    cscrPrintLine("Hello BIOS ",930);
+    cscrPrintNumber(programsize,930); 
     cscrPrintLine("\n");
 }
 

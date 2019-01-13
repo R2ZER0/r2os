@@ -5,11 +5,13 @@ float _kernel_task_prev = -1;
 float _kernel_task_active[MAX_NUM_TASKS];
 float _kernel_task_ss[MAX_NUM_TASKS];
 float _kernel_task_esp[MAX_NUM_TASKS];
+float _kernel_task_segment[MAX_NUM_TASKS];
 
 void task_init(float idx, float* stack_bottom, float* segment, float* entrypoint) {
     _kernel_task_active[idx] = 1;
     _kernel_task_ss[idx] = stack_bottom;
     _kernel_task_esp[idx] = TASK_STACK_SIZE - 21;
+    _kernel_task_segment[idx] = segment;
     
     float* s = stack_bottom + TASK_STACK_SIZE - 1; // s is the top of the stack
     *s = 0; // LS
