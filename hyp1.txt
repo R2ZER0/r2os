@@ -133,6 +133,7 @@ interrupt_handler:
     jump _endloop;
 
 context_switch_handler:
+    mov ds, 0; // reset to kernel data segment
     // save current task stack
     eax = &_kernel_task_esp + _kernel_task_cur;
     mov [eax], esp;

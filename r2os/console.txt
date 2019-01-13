@@ -1,5 +1,4 @@
 void init_console() {
-    udhSetBusAddress(65536);
     cscrInitialize(0);
     udhQueryDevices();
 
@@ -19,6 +18,15 @@ void print(float* s) {
 
 void printn(float n) {
     cscrPrintNumber(n, 93);
+}
+
+void printmem(float address, float count) {
+    if(count < 0) { return; }
+    while(count > 0) {
+        printn(address); print(": "); printn(*address); print("\n");
+        ++address;
+        --count;
+    }    
 }
 
 /*

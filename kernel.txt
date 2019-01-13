@@ -5,6 +5,11 @@ jmp _start;
 #define KERNEL_STACK_SIZE 2048
 #define TASK_STACK_SIZE 1000
 
+// ROM starts after 64k internal RAM
+#define ROM_ADDRESS 65536
+// external bus starts after 64k internal ram + 128k rom
+#define EXTBUS_ADDRESS 196608
+
 #include <programs/mem.txt>
 
 //Include drivers for console screen and device host
@@ -34,9 +39,10 @@ void print_task_state(float task_idx) {
 
 void kernel_init() {
     mem_heap_init(10000, 16*1024);
+    udhSetBusAddress(131072 + 65536);
     init_console();
     
-    cscrPrintLine("Hi\n", 930);
+    out 7, udhBusOffset;
     
     float* stack_bottom = mem_heap_alloc(TASK_STACK_SIZE);
     //print("Stack @"); printn(stack_bottom); print("\n");
@@ -60,21 +66,27 @@ void kernel_init() {
     out 1, _kernel_task_esp[0];
     out 2, _kernel_task_ss[1];
     out 3, _kernel_task_esp[1];
+    
+    
+    float task3_idx = task_create(ROM_ADDRESS, 0);
+    //print_task_state(task3_idx);
+    print_state_stack(_kernel_task_ss[2] + TASK_STACK_SIZE - 1);
+    printmem(ROM_ADDRESS, 12);
 
     //float* task1_stack = task_get_stack_top(task_top);
-   
     //print_state_stack(task_get_stack_top(task1));
+    
     task_goto_next();
     print("Starting Task "); printn(_kernel_task_cur); print("\n\n");
-    //jmp _endloop;
+    //jmp _halt;
 }
 
 void kernel_service() {
     out 5, _kernel_interrupt_no;
-    print("Prev Task: "); printn(_kernel_task_cur);
+    //print("Prev Task: "); printn(_kernel_task_cur);
     task_goto_next();
-    print("\nNext Task: "); printn(_kernel_task_cur);
-    print("\n");
+    //print("\nNext Task: "); printn(_kernel_task_cur);
+    //print("\n");
     //print_task_state(_kernel_task_cur);
 }
 
